@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>How Well Do You Know Me?</title>
+  <style>
+    :root{
+      --bg1:#2a0a3f;
+      --bg2:#5b1b7a;
+      --card:#ffffff;
+      --purple:#7c3aed;
+      --purple-dark:#5b21b6;
+      --text:#24122f;
+      --muted:#6f5b79;
+      --correct:#159447;
+      --wrong:#d64545;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Arial, Helvetica, sans-serif;
+      background:linear-gradient(135deg,var(--bg1),var(--bg2));
+      color:var(--text);
+      padding:20px;
+    }
+    .wrap{
+      width:min(760px,100%);
+      margin:0 auto;
+    }
+    .card{
+      background:rgba(255,255,255,.97);
+      border-radius:24px;
+      padding:24px;
+      box-shadow:0 18px 50px rgba(0,0,0,.28);
+    }
+    h1,h2,p{margin-top:0}
+    .hero{
+      text-align:center;
+      padding:40px 24px;
+    }
+    .hero h1{
+      font-size:clamp(2rem,7vw,3.5rem);
+      margin-bottom:12px;
+      color:var(--purple-dark);
+    }
+    .hero p{
+      color:var(--muted);
+      font-size:1.05rem;
+      line-height:1.6;
+    }
+    button{
+      border:0;
+      border-radius:14px;
+      cursor:pointer;
+      font-size:1rem;
+      font-weight:700;
+      transition:.18s ease;
+    }
+    .primary{
+      background:var(--purple);
+      color:white;
+      padding:14px 24px;
+      width:100%;
+      margin-top:14px;
+    }
+    .primary:hover{transform:translateY(-1px);background:var(--purple-dark)}
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      align-items:center;
+      margin-bottom:16px;
+      color:var(--muted);
+      font-weight:700;
+    }
+    .progress{
+      height:10px;
+      background:#eadff1;
+      border-radius:999px;
+      overflow:hidden;
+      margin-bottom:24px;
+    }
+    .progress > div{
+      height:100%;
+      background:linear-gradient(90deg,#8b5cf6,#c084fc);
+      width:0%;
+      transition:width .25s ease;
+    }
+    .question{
+      font-size:1.45rem;
+      line-height:1.35;
+      margin-bottom:18px;
+    }
+    .answers{
+      display:grid;
+      gap:12px;
+    }
+    .answer{
+      text-align:left;
+      background:#f4eef8;
+      padding:15px 16px;
+      color:var(--text);
+      border:2px solid transparent;
+    }
+    .answer:hover{border-color:#c4a7db}
+    .answer.correct{
+      background:#e2f7e9;
+      border-color:var(--correct);
+      color:#0c6a31;
+    }
+    .answer.wrong{
+      background:#fde7e7;
+      border-color:var(--wrong);
+      color:#992828;
+    }
+    .answer:disabled{cursor:default}
+    .feedback{
+      margin-top:16px;
+      font-weight:800;
+      min-height:24px;
+    }
+    .next{
+      margin-top:14px;
+      display:none;
+    }
+    .result{
+      text-align:center;
+      padding:28px 18px;
+    }
+    .score{
+      font-size:4rem;
+      font-weight:900;
+      color:var(--purple-dark);
+      margin:12px 0;
+    }
+    .result-message{
+      font-size:1.25rem;
+      line-height:1.5;
+      margin-bottom:22px;
+    }
+    .review{
+      text-align:left;
+      margin-top:26px;
+      display:grid;
+      gap:12px;
+    }
+    .review-item{
+      background:#f5eef9;
+      border-radius:14px;
+      padding:14px;
+    }
+    .review-item strong{display:block;margin-bottom:6px}
+    .small{font-size:.92rem;color:var(--muted)}
+    .hidden{display:none}
+    @media (max-width:520px){
+      body{padding:12px}
+      .card{padding:18px;border-radius:20px}
+      .question{font-size:1.25rem}
+      .score{font-size:3.2rem}
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section id="startScreen" class="card hero">
+      <h1>💜 How Well Do You Know Me? 💜</h1>
+      <p>20 questions. Some are easy, some are sneaky, and some are only for my closest friends 😭</p><input id='playerName' placeholder='Enter your name ✨' style='width:100%;padding:12px;border-radius:12px;border:2px solid #d7c4eb;margin:10px 0;font-size:1rem;'>
+      <button class="primary" id="startBtn">Start the quiz</button>
+    </section>
+
+    <section id="quizScreen" class="card hidden">
+      <div class="topbar">
+        <span id="questionCount">Question 1 of 20</span>
+        <span id="liveScore">Score: 0</span>
+      </div>
+      <div class="progress"><div id="progressBar"></div></div>
+      <h2 class="question" id="questionText"></h2>
+      <div class="answers" id="answers"></div>
+      <div class="feedback" id="feedback"></div>
+      <button class="primary next" id="nextBtn">Next question</button>
+    </section>
+
+    <section id="resultScreen" class="card result hidden">
+      <h2>Your final score</h2>
+      <div class="score" id="finalScore"></div>
+      <div class="result-message" id="resultMessage"></div>
+      <button class="primary" id="restartBtn">Try again</button>
+      <div class="review" id="review"></div>
+    </section>
+  </main>
+
+  <script>
+    const quiz = [
+      {
+        q: "What's my favourite colour?",
+        options: ["Blue","Purple","Pink","Red"],
+        answer: "Purple"
+      },
+      {
+        q: "What's my favourite food?",
+        options: ["Burger","Pasta","Pizza","Sushi"],
+        answer: "Pizza"
+      },
+      {
+        q: "What's my favourite season?",
+        options: ["Winter","Summer","Autumn","Spring"],
+        answer: "Summer"
+      },
+      {
+        q: "Which animal would I choose as a pet?",
+        options: ["Cat","Rabbit","Dog","Parrot"],
+        answer: "Dog"
+      },
+      {
+        q: "What's my biggest ick?",
+        options: ["Bad hygiene","Dry texters","People who are always late","Loud chewing"],
+        answer: "Dry texters"
+      },
+      {
+        q: "What's the quickest way to make me lose interest?",
+        options: ["Being bad at texting","Showing off all the time","Interrupting me when I speak","Being overly clingy"],
+        answer: "Interrupting me when I speak"
+      },
+      {
+        q: "What's my love language?",
+        options: ["Acts of service","Skinship / physical touch","Quality time","Receiving gifts"],
+        answer: "Skinship / physical touch"
+      },
+      {
+        q: "What's my favourite music genre?",
+        options: ["T-Pop","K-Pop","Any genre","R&B"],
+        answer: "Any genre"
+      },
+      {
+        q: "What's my favourite social media app?",
+        options: ["Instagram","TikTok","Discord","YouTube"],
+        answer: "TikTok"
+      },
+      {
+        q: "What's my favourite thing to do in my free time?",
+        options: ["Play video games","Read books","Watch BLs","Listen to music"],
+        answer: "Watch BLs"
+      },
+      {
+        q: "What's something I'm surprisingly good at?",
+        options: ["Singing","Being flexible","Drawing","Cooking"],
+        answer: "Being flexible"
+      },
+      {
+        q: "What's my favourite colour to wear?",
+        options: ["White","Navy blue","Black","Grey"],
+        answer: "Black"
+      },
+      {
+        q: "What's my secondary gender?",
+        options: ["Omega","Alpha","Enigma","Beta"],
+        answer: "Alpha"
+      },
+      {
+        q: "What's my dream country to visit?",
+        options: ["South Korea","Japan","Thailand","Switzerland"],
+        answer: "Thailand"
+      },
+      {
+        q: "What kind of place would I most want to live in?",
+        options: ["A beach house","An estate","A busy city centre","A cabin in the mountains"],
+        answer: "An estate"
+      },
+      {
+        q: "If I could own any animal, which would I choose?",
+        options: ["Fox","Monkey","Otter","Wolf"],
+        answer: "Monkey"
+      },
+      {
+        q: "Who's my favourite music artist?",
+        options: ["BTS","TXT","Stray Kids","Enhypen"],
+        answer: "Stray Kids"
+      },
+      {
+        q: "What's my favourite BL series of all time?",
+        options: ["Duang With You","Jack & Joker","The Eclipse","Not Me"],
+        answer: "Not Me"
+      },
+      {
+        q: "Who's my favourite BL actor?",
+        options: ["Pond","Fourth","Phuwin","Gemini"],
+        answer: "Phuwin"
+      },
+      {
+        q: "What's my favourite movie?",
+        options: ["Annabelle","Scream","Fear Street","The Texas Chainsaw Massacre"],
+        answer: "Fear Street"
+      }
+    ];
+
+    let current = 0;
+    let score = 0;
+    let selectedAnswers = [];
+
+    const startScreen = document.getElementById("startScreen");
+    const quizScreen = document.getElementById("quizScreen");
+    const resultScreen = document.getElementById("resultScreen");
+    const questionText = document.getElementById("questionText");
+    const answersEl = document.getElementById("answers");
+    const feedback = document.getElementById("feedback");
+    const nextBtn = document.getElementById("nextBtn");
+    const questionCount = document.getElementById("questionCount");
+    const liveScore = document.getElementById("liveScore");
+    const progressBar = document.getElementById("progressBar");
+
+    document.getElementById("startBtn").addEventListener("click", () => {
+      startScreen.classList.add("hidden");
+      quizScreen.classList.remove("hidden");
+      renderQuestion();
+    });
+
+    document.getElementById("restartBtn").addEventListener("click", () => {
+      current = 0;
+      score = 0;
+      selectedAnswers = [];
+      resultScreen.classList.add("hidden");
+      quizScreen.classList.remove("hidden");
+      renderQuestion();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      current++;
+      if (current < quiz.length) renderQuestion();
+      else showResults();
+    });
+
+    function renderQuestion(){
+      const item = quiz[current];
+      questionText.textContent = item.q;
+      questionCount.textContent = `Question ${current + 1} of ${quiz.length}`;
+      liveScore.textContent = `Score: ${score}`;
+      progressBar.style.width = `${(current / quiz.length) * 100}%`;
+      answersEl.innerHTML = "";
+      feedback.textContent = "";
+      nextBtn.style.display = "none";
+      nextBtn.textContent = current === quiz.length - 1 ? "See my score" : "Next question";
+
+      item.options.forEach(option => {
+        const btn = document.createElement("button");
+        btn.className = "answer";
+        btn.textContent = option;
+        btn.addEventListener("click", () => chooseAnswer(btn, option));
+        answersEl.appendChild(btn);
+      });
+    }
+
+    function chooseAnswer(button, option){
+      const item = quiz[current];
+      const buttons = [...document.querySelectorAll(".answer")];
+      buttons.forEach(b => b.disabled = true);
+
+      const isCorrect = option === item.answer;
+      if (isCorrect){
+        score++;
+        button.classList.add("correct");
+        feedback.textContent = "Correct 😌";
+        feedback.style.color = "var(--correct)";
+      } else {
+        button.classList.add("wrong");
+        feedback.textContent = `Wrong 😭 The answer was: ${item.answer}`;
+        feedback.style.color = "var(--wrong)";
+        buttons.find(b => b.textContent === item.answer)?.classList.add("correct");
+      }
+
+      selectedAnswers.push({
+        question: item.q,
+        chosen: option,
+        correct: item.answer,
+        isCorrect
+      });
+
+      liveScore.textContent = `Score: ${score}`;
+      progressBar.style.width = `${((current + 1) / quiz.length) * 100}%`;
+      nextBtn.style.display = "block";
+    }
+
+    function showResults(){
+      quizScreen.classList.add("hidden");
+      resultScreen.classList.remove("hidden");
+
+      document.getElementById("finalScore").textContent = `${score}/20`;
+
+      const name=(document.getElementById("playerName")?.value||"Bestie").trim(); let message="";
+      if (score === 20) message = "Okayyy soulmate status 😭💜 You know me TOO well.";
+      else if (score >= 16) message = "Certified close friend 💅 You definitely know your stuff.";
+      else if (score >= 11) message = "Not bad at all 👀 You know me, but I can still surprise you.";
+      else if (score >= 6) message = "Hmm… acquaintance energy 😭 We need to talk more.";
+      else message = "Do we even know each other? 💀";
+
+      
+document.getElementById("resultMessage").textContent = `${name}, ${message}`;
+if(score===20){
+  const c=document.createElement("div");
+  c.innerHTML="🎉🎉🎉 PERFECT SCORE! 🎉🎉🎉";
+  c.style.fontSize="2rem";
+  c.style.margin="15px";
+  document.getElementById("resultScreen").prepend(c);
+  for(let i=0;i<120;i++){
+    const s=document.createElement("span");
+    s.textContent=["💜","✨","🎉"][i%3];
+    s.style.position="fixed";
+    s.style.left=Math.random()*100+"vw";
+    s.style.top="-20px";
+    s.style.fontSize=(16+Math.random()*16)+"px";
+    s.style.transition="transform 3s linear";
+    document.body.appendChild(s);
+    requestAnimationFrame(()=>{s.style.transform=`translateY(${window.innerHeight+80}px)`;});
+    setTimeout(()=>s.remove(),3200);
+  }
+}
+
+
+      const review = document.getElementById("review");
+      review.innerHTML = "<h3>Answer review</h3>";
+      selectedAnswers.forEach((item, i) => {
+        const div = document.createElement("div");
+        div.className = "review-item";
+        div.innerHTML = `
+          <strong>${i + 1}. ${item.question}</strong>
+          <div class="small">Your answer: ${item.chosen}</div>
+          <div class="small">Correct answer: ${item.correct}</div>
+        `;
+        review.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>
