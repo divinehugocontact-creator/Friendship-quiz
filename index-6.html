@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>How Well Do You Know Me?</title>
+<meta name="description" content="Take my friendship quiz and join the global leaderboard!">
+<style>
+:root{--bg1:#1c062e;--bg2:#5f1d85;--purple:#7c3aed;--purple2:#a855f7;--text:#24122f;--muted:#6d5a76;--good:#168a46;--bad:#d04452}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;font-family:Arial,Helvetica,sans-serif;background:radial-gradient(circle at 15% 10%,rgba(255,255,255,.12),transparent 25%),radial-gradient(circle at 85% 80%,rgba(255,255,255,.08),transparent 30%),linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--text);padding:16px;overflow-x:hidden}
+.shell{width:min(760px,100%);margin:auto}
+.card{background:rgba(255,255,255,.98);border-radius:26px;padding:24px;box-shadow:0 22px 65px rgba(0,0,0,.3);animation:cardIn .45s ease both}
+@keyframes cardIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes slideIn{from{opacity:0;transform:translateX(28px)}to{opacity:1;transform:none}}
+@keyframes pop{0%{transform:scale(.85)}70%{transform:scale(1.06)}100%{transform:scale(1)}}
+.hidden{display:none!important}
+.hero{text-align:center;padding:42px 24px}
+.hero h1{font-size:clamp(2rem,8vw,3.7rem);color:#5b21b6;margin:0 0 12px}
+.hero p{color:var(--muted);line-height:1.6;margin:0}
+.input{width:100%;padding:14px 16px;border:2px solid #ddc9ed;border-radius:14px;font-size:1rem;outline:none;margin-top:16px}
+.input:focus{border-color:var(--purple)}
+button{border:0;border-radius:15px;padding:14px 18px;font-size:1rem;font-weight:800;cursor:pointer;transition:.18s ease}
+.primary{width:100%;background:linear-gradient(90deg,var(--purple),var(--purple2));color:white;margin-top:14px}
+.primary:hover{transform:translateY(-1px)}
+.secondary{width:100%;background:#efe4f8;color:#5b21b6;margin-top:10px}
+.topbar{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-weight:800}
+.progress{height:11px;background:#eadff1;border-radius:99px;overflow:hidden;margin:16px 0 24px}
+.progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,#8b5cf6,#c084fc);transition:width .45s ease}
+.questionStage{animation:slideIn .36s ease both}
+.question{font-size:1.45rem;line-height:1.35;margin:0 0 8px}
+.hint{font-size:.95rem;color:var(--muted);margin-bottom:16px}
+.answers{display:grid;gap:12px}
+.answer{text-align:left;background:#f4eef8;color:var(--text);border:2px solid transparent}
+.answer:hover{border-color:#c7a9dd;transform:translateY(-1px)}
+.answer.selected{border-color:var(--purple);background:#ede3ff}
+.answer.correct{background:#e2f7e9;border-color:var(--good);color:#0c6a31}
+.answer.wrong{background:#fde7e9;border-color:var(--bad);color:#8d2733}
+.answer:disabled{cursor:default;transform:none}
+.feedback{min-height:26px;margin-top:16px;font-weight:900}
+.result{text-align:center}
+.scoreRing{width:180px;height:180px;border-radius:50%;margin:20px auto;display:grid;place-items:center;background:conic-gradient(var(--purple) 0deg,#ece5f2 0deg);position:relative}
+.scoreRing::before{content:"";position:absolute;inset:14px;background:white;border-radius:50%}
+.scoreText{position:relative;font-size:2.7rem;font-weight:900;color:#5b21b6}
+.endingTitle{font-size:1.8rem;font-weight:900;margin-top:8px}
+.endingCard{border-radius:18px;padding:18px;margin:12px 0 16px;font-size:1.1rem;font-weight:800;animation:pop .45s ease both}
+.gold{background:#fff4cc;color:#725400}.purple{background:#efe2ff;color:#5b21b6}.blue{background:#e2f0ff;color:#245b95}.pink{background:#ffe4ef;color:#982c58}.gray{background:#f0f0f0;color:#555}
+.sectionTitle{text-align:left;margin:26px 0 10px}
+.review,.leaderboard{display:grid;gap:10px;text-align:left}
+.item{background:#f5eef9;border-radius:14px;padding:13px}
+.rank{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.small{font-size:.92rem;color:var(--muted);margin-top:4px}
+.status{font-size:.92rem;color:var(--muted);text-align:center;margin-top:10px}
+.confetti{position:fixed;top:-24px;z-index:9999;pointer-events:none;animation:fall 3.2s linear forwards}
+@keyframes fall{to{transform:translateY(112vh) rotate(720deg);opacity:.9}}
+@media(max-width:520px){.card{padding:18px;border-radius:20px}.question{font-size:1.25rem}.scoreRing{width:150px;height:150px}.scoreText{font-size:2.2rem}}
+</style>
+</head>
+<body>
+<main class="shell">
+<section id="start" class="card hero">
+<h1>💜 How Well Do You Know Me? 💜</h1>
+<p>27 questions. Some are easy, some are sneaky, and some are only for my closest friends 😭</p>
+<input id="nameInput" class="input" maxlength="24" placeholder="Enter your name ✨">
+<button id="startBtn" class="primary">Start the quiz</button>
+</section>
+
+<section id="quiz" class="card hidden">
+<div class="topbar"><span id="count">Question 1 of 27</span><span id="live">Score: 0</span></div>
+<div class="progress"><span id="bar"></span></div>
+<div id="stage" class="questionStage">
+<h2 id="question" class="question"></h2>
+<div id="hint" class="hint"></div>
+<div id="answers" class="answers"></div>
+<div id="feedback" class="feedback"></div>
+<button id="submitMulti" class="primary hidden">Lock in both answers</button>
+<button id="nextBtn" class="primary hidden">Next question</button>
+</div>
+</section>
+
+<section id="result" class="card result hidden">
+<h2>Your final score</h2>
+<div id="scoreRing" class="scoreRing"><div id="scoreText" class="scoreText">0/27</div></div>
+<div id="endingTitle" class="endingTitle"></div>
+<div id="endingCard" class="endingCard"></div>
+<button id="shareBtn" class="primary">Share my score</button>
+<button id="restartBtn" class="secondary">Try again</button>
+<div id="saveStatus" class="status">Saving your score…</div>
+<h3 class="sectionTitle">🌍 Global leaderboard</h3>
+<div id="leaderboard" class="leaderboard"><div class="item">Loading scores…</div></div>
+<h3 class="sectionTitle">📋 Answer review</h3>
+<div id="review" class="review"></div>
+</section>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+const firebaseConfig={
+ apiKey:"AIzaSyA7hsofAKK3mPKIk8SON0rxJy77qaC02So",
+ authDomain:"friendship-quiz-20432.firebaseapp.com",
+ projectId:"friendship-quiz-20432",
+ storageBucket:"friendship-quiz-20432.firebasestorage.app",
+ messagingSenderId:"203544614713",
+ appId:"1:203544614713:web:c8bc01233b7f2ad68abae8"
+};
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
+
+const quizData=[{"q": "What's my favourite colour?", "options": ["Blue", "Purple", "Pink", "Red"], "answers": ["Purple"]}, {"q": "What's my favourite food?", "options": ["Burger", "Pasta", "Pizza", "Sushi"], "answers": ["Pizza"]}, {"q": "What's my favourite season?", "options": ["Winter", "Summer", "Autumn", "Spring"], "answers": ["Summer"]}, {"q": "Which animal would I choose as a pet?", "options": ["Cat", "Rabbit", "Dog", "Parrot"], "answers": ["Dog"]}, {"q": "What's my biggest ick?", "options": ["Bad hygiene", "Dry texters", "People who are always late", "Loud chewing"], "answers": ["Dry texters"]}, {"q": "What's the quickest way to make me lose interest?", "options": ["Being bad at texting", "Showing off all the time", "Interrupting me when I speak", "Being overly clingy"], "answers": ["Interrupting me when I speak"]}, {"q": "What's my love language?", "options": ["Acts of service", "Skinship / physical touch", "Quality time", "Receiving gifts"], "answers": ["Skinship / physical touch"]}, {"q": "What's my favourite music genre?", "options": ["T-Pop", "K-Pop", "Any genre", "R&B"], "answers": ["Any genre"]}, {"q": "What's my favourite social media app?", "options": ["Instagram", "TikTok", "Discord", "YouTube"], "answers": ["TikTok"]}, {"q": "What's my favourite thing to do in my free time?", "options": ["Play video games", "Read books", "Watch BLs", "Listen to music"], "answers": ["Watch BLs"]}, {"q": "What's something I'm surprisingly good at?", "options": ["Singing", "Being flexible", "Drawing", "Cooking"], "answers": ["Being flexible"]}, {"q": "What's my favourite colour to wear?", "options": ["White", "Navy blue", "Black", "Grey"], "answers": ["Black"]}, {"q": "What's my secondary gender?", "options": ["Omega", "Alpha", "Enigma", "Beta"], "answers": ["Alpha"]}, {"q": "What's my dream country to visit?", "options": ["South Korea", "Japan", "Thailand", "Switzerland"], "answers": ["Thailand"]}, {"q": "What kind of place would I most want to live in?", "options": ["A beach house", "An estate", "A busy city centre", "A cabin in the mountains"], "answers": ["An estate"]}, {"q": "If I could own any animal, which would I choose?", "options": ["Fox", "Monkey", "Otter", "Wolf"], "answers": ["Monkey"]}, {"q": "Who's my favourite music artist?", "options": ["BTS", "TXT", "Stray Kids", "Enhypen"], "answers": ["Stray Kids"]}, {"q": "What's my favourite BL series of all time?", "options": ["Duang With You", "Jack & Joker", "The Eclipse", "Not Me"], "answers": ["Not Me"]}, {"q": "Who's my favourite BL actor?", "options": ["Pond", "Fourth", "Phuwin", "Gemini"], "answers": ["Phuwin"]}, {"q": "What's my favourite movie?", "options": ["Annabelle", "Scream", "Fear Street", "The Texas Chainsaw Massacre"], "answers": ["Fear Street"]}, {"q": "When's my birthday?", "options": ["February 4th", "February 14th", "March 4th", "January 4th"], "answers": ["February 4th"]}, {"q": "What's my favourite emoji?", "options": ["\ud83e\udd0f", "\ud83d\ude2d", "\ud83d\udc9c", "\ud83e\udd28"], "answers": ["\ud83e\udd0f"]}, {"q": "If I could have one superpower, what would it be?", "options": ["Time manipulation", "Teleportation", "Mind reading", "Invisibility"], "answers": ["Time manipulation"]}, {"q": "Which TWO languages do I want to learn the most?", "options": ["Spanish", "Thai", "Korean", "Japanese"], "answers": ["Spanish", "Thai"], "multi": true}, {"q": "How do I prefer people to contact me?", "options": ["Text", "Call", "Voice message", "FaceTime"], "answers": ["Voice message"]}, {"q": "What's my MBTI personality type?", "options": ["ESFP", "ENFP", "ESTP", "ESFJ"], "answers": ["ESFP"]}, {"q": "What's my zodiac sign?", "options": ["Aquarius", "Capricorn", "Pisces", "Gemini"], "answers": ["Aquarius"]}];
+let index=0,score=0,picked=[],player="Bestie",selectedMulti=[],submitted=false;
+const $=id=>document.getElementById(id);
+const shuffle=a=>{const x=[...a];for(let i=x.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[x[i],x[j]]=[x[j],x[i]]}return x};
+
+$("startBtn").onclick=()=>{
+ player=$("nameInput").value.trim().replace(/[<>]/g,"").slice(0,24)||"Bestie";
+ $("start").classList.add("hidden");$("quiz").classList.remove("hidden");render();
+};
+
+function animateStage(){const s=$("stage");s.classList.remove("questionStage");void s.offsetWidth;s.classList.add("questionStage")}
+function render(){
+ animateStage();selectedMulti=[];
+ const item=quizData[index];
+ $("count").textContent=`Question ${index+1} of ${quizData.length}`;
+ $("live").textContent=`Score: ${score}`;
+ $("bar").style.width=`${index/quizData.length*100}%`;
+ $("question").textContent=item.q;
+ $("hint").textContent=item.multi?"Choose exactly TWO answers":"";
+ $("answers").innerHTML="";$("feedback").textContent="";
+ $("nextBtn").classList.add("hidden");$("submitMulti").classList.add("hidden");
+ $("nextBtn").textContent=index===quizData.length-1?"See my score":"Next question";
+ shuffle(item.options).forEach(opt=>{
+  const b=document.createElement("button");b.className="answer";b.textContent=opt;
+  b.onclick=()=>item.multi?toggleMulti(b,opt):chooseSingle(b,opt);
+  $("answers").appendChild(b);
+ });
+ if(item.multi)$("submitMulti").classList.remove("hidden");
+}
+function chooseSingle(button,opt){
+ const item=quizData[index],buttons=[...document.querySelectorAll(".answer")];
+ buttons.forEach(b=>b.disabled=true);
+ const correct=item.answers.includes(opt);
+ if(correct){score++;button.classList.add("correct");$("feedback").textContent="Correct 😌";$("feedback").style.color="var(--good)"}
+ else{button.classList.add("wrong");buttons.find(b=>item.answers.includes(b.textContent))?.classList.add("correct");$("feedback").textContent=`Wrong 😭 The answer was: ${item.answers.join(" and ")}`;$("feedback").style.color="var(--bad)"}
+ picked.push({question:item.q,chosen:opt,correct:item.answers.join(" and ")});finishQuestion();
+}
+function toggleMulti(button,opt){
+ if(selectedMulti.includes(opt)){selectedMulti=selectedMulti.filter(x=>x!==opt);button.classList.remove("selected")}
+ else if(selectedMulti.length<2){selectedMulti.push(opt);button.classList.add("selected")}
+}
+$("submitMulti").onclick=()=>{
+ const item=quizData[index];
+ if(selectedMulti.length!==2){$("feedback").textContent="Pick exactly two answers first 👀";$("feedback").style.color="var(--bad)";return}
+ const buttons=[...document.querySelectorAll(".answer")];buttons.forEach(b=>b.disabled=true);
+ const correct=[...selectedMulti].sort().join("|")===[...item.answers].sort().join("|");
+ buttons.forEach(b=>{if(item.answers.includes(b.textContent))b.classList.add("correct");else if(selectedMulti.includes(b.textContent))b.classList.add("wrong")});
+ if(correct){score++;$("feedback").textContent="Both correct 😌";$("feedback").style.color="var(--good)"}
+ else{$("feedback").textContent=`Wrong 😭 The answers were: ${item.answers.join(" and ")}`;$("feedback").style.color="var(--bad)"}
+ picked.push({question:item.q,chosen:selectedMulti.join(" and "),correct:item.answers.join(" and ")});
+ $("submitMulti").classList.add("hidden");finishQuestion();
+};
+function finishQuestion(){$("live").textContent=`Score: ${score}`;$("bar").style.width=`${(index+1)/quizData.length*100}%`;$("nextBtn").classList.remove("hidden")}
+$("nextBtn").onclick=()=>{index++;index<quizData.length?render():showResults()};
+
+function ending(s){
+ if(s===27)return{title:"Official Best Friend 💜",cls:"gold",text:`${player}, perfect score. You know me TOO well 👑`};
+ if(s>=24)return{title:"Inner Circle 😌",cls:"purple",text:`${player}, you're definitely one of my closest people.`};
+ if(s>=20)return{title:"Close Friend 🫶",cls:"blue",text:`${player}, you know me really well—but I can still surprise you.`};
+ if(s>=14)return{title:"Casual Friend 😭",cls:"pink",text:`${player}, not terrible, but we clearly need to talk more.`};
+ if(s>=7)return{title:"Do you even know me? 💀",cls:"gray",text:`${player}, some of those answers were concerning 😭`};
+ return{title:"Who even are you? 🚪😂",cls:"gray",text:`${player}, please exit the friendship quiz immediately.`};
+}
+function animateScore(){
+ let shown=0,target=score,ring=$("scoreRing");
+ if(target===0){$("scoreText").textContent="0/27";return}
+ const timer=setInterval(()=>{shown++;$("scoreText").textContent=`${shown}/27`;ring.style.background=`conic-gradient(var(--purple) ${shown/27*360}deg,#ece5f2 0deg)`;if(shown>=target)clearInterval(timer)},55);
+}
+function confetti(){
+ const pieces=["💜","✨","🎉","⭐"];
+ for(let i=0;i<110;i++){const el=document.createElement("span");el.className="confetti";el.textContent=pieces[i%pieces.length];el.style.left=Math.random()*100+"vw";el.style.fontSize=(14+Math.random()*18)+"px";el.style.animationDelay=(Math.random()*.8)+"s";document.body.appendChild(el);setTimeout(()=>el.remove(),4200)}
+}
+async function saveScore(){
+ if(submitted)return;submitted=true;
+ try{
+  await addDoc(collection(db,"leaderboard"),{name:player,score,total:27,title:ending(score).title,createdAt:serverTimestamp()});
+  $("saveStatus").textContent="Your score was added to the global leaderboard 💜";
+ }catch(err){
+  console.error(err);$("saveStatus").textContent="Your score couldn't be saved, but your result still works.";
+ }
+ await loadLeaderboard();
+}
+async function loadLeaderboard(){
+ try{
+  const snap=await getDocs(collection(db,"leaderboard"));
+  const rows=snap.docs.map(d=>d.data()).filter(x=>typeof x.score==="number"&&typeof x.name==="string");
+  rows.sort((a,b)=>b.score-a.score);
+  const top=rows.slice(0,10);
+  $("leaderboard").innerHTML=top.length?top.map((x,i)=>`
+   <div class="item rank"><div><strong>${i+1}. ${escapeHtml(x.name)}</strong><div class="small">${escapeHtml(x.title||"Quiz Player")}</div></div><strong>${x.score}/27</strong></div>`).join("")
+   :'<div class="item">No scores yet—be the first!</div>';
+ }catch(err){console.error(err);$("leaderboard").innerHTML='<div class="item">Leaderboard could not load right now.</div>'}
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+async function showResults(){
+ $("quiz").classList.add("hidden");$("result").classList.remove("hidden");animateScore();
+ const e=ending(score);$("endingTitle").textContent=e.title;$("endingCard").className=`endingCard ${e.cls}`;$("endingCard").textContent=e.text;
+ $("review").innerHTML=picked.map((x,i)=>`<div class="item"><strong>${i+1}. ${escapeHtml(x.question)}</strong><div class="small">Your answer: ${escapeHtml(x.chosen)}</div><div class="small">Correct answer: ${escapeHtml(x.correct)}</div></div>`).join("");
+ if(score>=20)confetti();
+ await saveScore();
+}
+$("shareBtn").onclick=async()=>{
+ const text=`${player} scored ${score}/27 and got “${ending(score).title}” on the How Well Do You Know Me quiz 💜`;
+ try{if(navigator.share)await navigator.share({title:"How Well Do You Know Me?",text,url:location.href});else{await navigator.clipboard.writeText(`${text} ${location.href}`);alert("Score and quiz link copied!")}}catch(e){}
+};
+$("restartBtn").onclick=()=>{index=0;score=0;picked=[];submitted=false;$("result").classList.add("hidden");$("start").classList.remove("hidden")};
+</script>
+</body>
+</html>
